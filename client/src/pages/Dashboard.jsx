@@ -9,7 +9,7 @@ import {
   TrendingUp, TrendingDown, PieChart, Wallet, Target, 
   BarChart3, ArrowUpRight, ArrowDownRight, CheckCircle2, 
   LayoutDashboard, ShieldAlert, Loader2, Calendar, 
-  AlertCircle, Sparkles, Phone, Clock, Trophy, Zap, Shield, ShieldCheck
+  AlertCircle, Sparkles, Phone, Clock, Trophy, Zap, Shield, ShieldCheck, IndianRupee
 } from 'lucide-react';
 import { 
   PieChart as RePieChart, Pie, Cell, ResponsiveContainer, 
@@ -19,6 +19,7 @@ import DiscoveryForm from '../components/DiscoveryForm';
 import AppointmentCard from '../components/AppointmentCard';
 import { Settings, X } from 'lucide-react';
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getAgeBasedStrategies } from '../services/strategies';
 
 const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -35,6 +36,16 @@ export default function Dashboard() {
   const [applyingStrategy, setApplyingStrategy] = useState(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editForm, setEditForm] = useState({ monthly_income: 0, essential_expenses: 0, non_essential_expenses: 0, rent_emi: 0, tax_liability: 0 });
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (!loading && discovery) {
+      // Simulate AI generation every time user lands if it's a fresh transition or update
+      setIsGenerating(true);
+      const timer = setTimeout(() => setIsGenerating(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, discovery?.id]);
 
   useEffect(() => {
     loadDashboard();
@@ -178,8 +189,8 @@ export default function Dashboard() {
 
   // Fixed Commitments / Spends
   const fixedExpenses = isBusiness
-    ? (parseFloat(user?.payroll || discovery?.payroll || 0) + parseFloat(user?.opex || discovery?.opex || 0))
-    : (parseFloat(discovery?.essential_expenses || 0) + parseFloat(discovery?.rent_emi || 0) + parseFloat(discovery?.other_needs || 0));
+    ? (parseFloat(user?.payroll || discovery?.payroll || 0) + parseFloat(user?.opex || discovery?.opex || 0) + parseFloat(user?.tax_liability || discovery?.tax_liability || 0))
+    : (parseFloat(discovery?.essential_expenses || 0) + parseFloat(discovery?.rent_emi || 0) + parseFloat(discovery?.other_needs || 0) + parseFloat(discovery?.non_essential_expenses || 0));
   
   // Available Cash (For Investment) is the amount AFTER fixed commitments
   const investableSurplus = Math.max(0, income - fixedExpenses);
@@ -406,23 +417,73 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
-                  <Target className="w-6 h-6" />
-               </div>
-               <div>
-                  <h2 className="text-xl font-black text-indigo-950 uppercase tracking-tight">Financial Plans</h2>
-                  <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">Select a safe, AI-recommended plan — all sections update instantly</p>
-               </div>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                    <Target className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-black text-indigo-950 uppercase tracking-tight">Financial Plans</h2>
+                    <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">
+                      {isGenerating ? (
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="flex items-center gap-2 text-primary"
+                        >
+                          <Loader2 className="w-3 h-3 animate-spin" /> Analyzing your financial DNA...
+                        </motion.span>
+                      ) : (
+                        "Select a safe, AI-recommended plan — all sections update instantly"
+                      )}
+                    </p>
+                 </div>
+              </div>
+              
+              <AnimatePresence>
+                {isGenerating && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-950 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-900/40"
+                  >
+                    <Sparkles className="w-3 h-3 text-rose-400 animate-pulse" />
+                    AI is Computing Optimal Risk
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-               {STRATEGIES.map(strat => {
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+               {isGenerating && (
+                 <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-3xl">
+                    <motion.div 
+                      initial={{ y: '-100%' }}
+                      animate={{ y: '100%' }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      className="w-full h-1/2 bg-gradient-to-b from-transparent via-primary/20 to-transparent blur-xl"
+                    />
+                 </div>
+               )}
+               
+               {STRATEGIES.map((strat, index) => {
                  const Icon = strat.icon;
                  const isActive = activePlan && parseFloat(activePlan.equity_pct) === strat.plan.equity_pct && parseFloat(activePlan.safe_pct) === strat.plan.safe_pct;
                  const isApplying = applyingStrategy === strat.name;
                  return (
-                  <div key={strat.id} className={`glass-card transition-all flex flex-col justify-between ${isActive ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-primary/5' : 'border-dashed border-2 hover:border-primary/40'}`}>
+                  <motion.div 
+                    key={strat.id}
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    animate={!isGenerating ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0.2, y: 10, scale: 0.98 }}
+                    transition={{ 
+                      delay: !isGenerating ? index * 0.15 : 0,
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15
+                    }}
+                    className={`glass-card transition-all flex flex-col justify-between ${isActive ? 'border-2 border-primary shadow-lg shadow-primary/10 bg-primary/5' : 'border-dashed border-2 hover:border-primary/40'}`}
+                  >
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className={`w-10 h-10 rounded-xl ${strat.color} flex items-center justify-center text-white shadow-lg`}>
@@ -461,7 +522,7 @@ export default function Dashboard() {
                       {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                       {isActive ? '✓ Currently Applied' : isApplying ? 'Applying...' : 'Apply This Plan'}
                     </button>
-                  </div>
+                  </motion.div>
                  );
                })}
             </div>
@@ -591,76 +652,157 @@ export default function Dashboard() {
       </div>
 
       {/* Edit Profile Modal */}
-      {showEditProfile && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowEditProfile(false)}>
-          <div className="glass-card w-full max-w-md bg-white p-6 rounded-3xl shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-indigo-950">Edit Profile</h3>
-              <button onClick={() => setShowEditProfile(false)} className="p-1 hover:bg-slate-100 rounded-full transition"><X className="w-5 h-5 text-slate-500"/></button>
-            </div>
+      <AnimatePresence>
+        {showEditProfile && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-indigo-950/40 backdrop-blur-md z-[100] flex items-center justify-center p-4 lg:p-8" 
+            onClick={() => setShowEditProfile(false)}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(30,41,59,0.25)] overflow-hidden flex flex-col md:flex-row relative" 
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Sidebar Info */}
+              <div className="md:w-1/3 bg-indigo-950 p-8 lg:p-10 text-white flex flex-col justify-between relative">
+                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                   <div className="absolute top-10 right-10 w-32 h-32 bg-primary rounded-full blur-3xl" />
+                   <div className="absolute bottom-10 left-10 w-32 h-32 bg-rose-500 rounded-full blur-3xl" />
+                </div>
+                
+                <div className="relative z-10">
+                   <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 border border-white/10">
+                      <Settings className="w-6 h-6 text-primary-light" />
+                   </div>
+                   <h3 className="text-3xl font-black mb-4">Financial Profile</h3>
+                   <p className="text-indigo-300 text-sm leading-relaxed mb-8">
+                     Updating these values will trigger a complete <span className="text-white font-bold">AI Recalibration</span> of your risk score and investment strategies.
+                   </p>
+                </div>
 
-             <form onSubmit={handleUpdateProfile} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">{user?.user_type === 'business' ? 'Monthly Revenue (₹)' : 'Monthly Income (₹)'}</label>
-                    <input type="number" value={user?.user_type === 'business' ? editForm.revenue : editForm.monthly_income} onChange={e => setEditForm({...editForm, [user?.user_type === 'business' ? 'revenue' : 'monthly_income']: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Date of Birth</label>
-                    <input type="date" value={editForm.birth_date} onChange={e => setEditForm({...editForm, birth_date: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
-                 </div>
+                <div className="relative z-10 space-y-4">
+                   <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+                      <Sparkles className="w-5 h-5 text-rose-400" />
+                      <div>
+                         <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">AI Logic</p>
+                         <p className="text-xs font-bold text-white">Dynamic Asset Rebalancing</p>
+                      </div>
+                   </div>
+                   <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest text-center">Managed by GrowCap AI</p>
+                </div>
               </div>
 
-              {user?.user_type === 'business' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Monthly Payroll (₹)</label>
-                        <input type="number" value={editForm.payroll} onChange={e => setEditForm({...editForm, payroll: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">OpEx (₹)</label>
-                        <input type="number" value={editForm.opex} onChange={e => setEditForm({...editForm, opex: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Rent / EMI (₹)</label>
-                        <input type="number" value={editForm.rent_emi} onChange={e => setEditForm({...editForm, rent_emi: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Other Needs (₹)</label>
-                        <input type="number" value={editForm.other_needs} onChange={e => setEditForm({...editForm, other_needs: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Essential (₹)</label>
-                        <input type="number" value={editForm.essential_expenses} onChange={e => setEditForm({...editForm, essential_expenses: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
+              {/* Form Area */}
+              <div className="flex-1 p-8 lg:p-12 relative flex flex-col max-h-[90vh]">
+                <button 
+                  onClick={() => setShowEditProfile(false)} 
+                  className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full transition group"
+                >
+                  <X className="w-6 h-6 text-slate-400 group-hover:text-indigo-950"/>
+                </button>
+
+                <div className="mb-8">
+                   <h4 className="text-2xl font-black text-indigo-950 mb-1">Core Metrics</h4>
+                   <p className="text-slate-500 text-sm font-medium">Keep your monthly cashflow data current.</p>
+                </div>
+
+                <form onSubmit={handleUpdateProfile} className="flex-1 overflow-y-auto pr-4 custom-scrollbar space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="space-y-2">
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">
+                          {user?.user_type === 'business' ? 'Monthly Revenue' : 'Monthly Income'}
+                        </label>
+                        <div className="relative group">
+                          <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600" />
+                          <input 
+                             type="number" 
+                             value={user?.user_type === 'business' ? editForm.revenue : editForm.monthly_income} 
+                             onChange={e => setEditForm({...editForm, [user?.user_type === 'business' ? 'revenue' : 'monthly_income']: e.target.value})} 
+                             className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-bold text-indigo-950" 
+                             required 
+                          />
+                        </div>
                      </div>
-                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Non-Essential (₹)</label>
-                        <input type="number" value={editForm.non_essential_expenses} onChange={e => setEditForm({...editForm, non_essential_expenses: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
+                     <div className="space-y-2">
+                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Date of Birth</label>
+                        <div className="relative group">
+                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600" />
+                          <input 
+                             type="date" 
+                             value={editForm.birth_date} 
+                             onChange={e => setEditForm({...editForm, birth_date: e.target.value})} 
+                             className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium text-slate-800" 
+                          />
+                        </div>
                      </div>
                   </div>
-                </>
-              )}
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Annual Tax Liability (₹)</label>
-                <input type="number" value={editForm.tax_liability} onChange={e => setEditForm({...editForm, tax_liability: e.target.value})} className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" />
+
+                  <div className="space-y-4">
+                     <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <ArrowDownRight className="w-3 h-3" /> Monthly Commitments
+                     </p>
+                    
+                     {user?.user_type === 'business' ? (
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div className="space-y-2">
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Payroll Costs</label>
+                            <input type="number" value={editForm.payroll} onChange={e => setEditForm({...editForm, payroll: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                         </div>
+                         <div className="space-y-2">
+                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">OpEx</label>
+                            <input type="number" value={editForm.opex} onChange={e => setEditForm({...editForm, opex: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                         </div>
+                       </div>
+                     ) : (
+                       <>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div className="space-y-2">
+                              <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Rent / EMI</label>
+                              <input type="number" value={editForm.rent_emi} onChange={e => setEditForm({...editForm, rent_emi: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                           </div>
+                           <div className="space-y-2">
+                              <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Essential Spends</label>
+                              <input type="number" value={editForm.essential_expenses} onChange={e => setEditForm({...editForm, essential_expenses: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                           </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div className="space-y-2">
+                              <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Non-Essential</label>
+                              <input type="number" value={editForm.non_essential_expenses} onChange={e => setEditForm({...editForm, non_essential_expenses: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                           </div>
+                           <div className="space-y-2">
+                              <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Other Planned Needs</label>
+                              <input type="number" value={editForm.other_needs} onChange={e => setEditForm({...editForm, other_needs: e.target.value})} className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-medium" />
+                           </div>
+                         </div>
+                       </>
+                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest ml-1">Annual Tax Liability</label>
+                    <div className="relative group">
+                       <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600" />
+                       <input type="number" value={editForm.tax_liability} onChange={e => setEditForm({...editForm, tax_liability: e.target.value})} className="w-full h-12 pl-12 pr-4 bg-indigo-50 border border-indigo-100 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all font-bold text-indigo-950" />
+                    </div>
+                  </div>
+
+                  <div className="pt-6">
+                     <button type="submit" className="w-full h-14 bg-indigo-950 text-white font-black rounded-2xl hover:bg-slate-900 shadow-2xl shadow-indigo-950/20 transition-all flex items-center justify-center gap-3">
+                        Recalibrate AI Strategies <Sparkles className="w-5 h-5 text-rose-400" />
+                     </button>
+                  </div>
+                </form>
               </div>
-              
-              <div className="pt-4 border-t border-slate-100 mt-6">
-                 <button type="submit" className="w-full py-3 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-xl transition-all">Save & Recalibrate AI Risk</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

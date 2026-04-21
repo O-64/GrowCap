@@ -111,21 +111,40 @@ export default function Layout() {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen relative">
+      <div className="flex-1 flex flex-col min-h-screen relative overflow-hidden bg-[#fdfbf7]">
+        {/* Premium Geometric & Abstract Background Logic */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          {/* Abstract Blobs */}
+          <div className="absolute -top-[10%] -right-[5%] w-[40%] h-[40%] bg-gradient-to-br from-orange-100 to-rose-50 rounded-full blur-[120px] opacity-40 animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute top-[20%] -left-[10%] w-[35%] h-[35%] bg-gradient-to-tr from-indigo-100/40 to-blue-50/20 rounded-full blur-[100px] opacity-30" />
+          <div className="absolute -bottom-[10%] right-[10%] w-[50%] h-[50%] bg-gradient-to-tl from-amber-100 to-orange-50/30 rounded-full blur-[140px] opacity-30 animate-pulse" style={{ animationDuration: '12s' }} />
+          
+          {/* Subtle Dot Pattern */}
+          <div className="absolute inset-0 opacity-[0.4]" style={{ backgroundImage: `radial-gradient(#d1d5db 1px, transparent 1px)`, backgroundSize: '32px 32px' }} />
+          
+          {/* Noise Texture */}
+          <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: `url("https://www.transparenttextures.com/patterns/cubes.png")` }} />
+
+          {/* Grainy Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#fdfbf7]/40 via-transparent to-[#fdfbf7]/60" />
+        </div>
+
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-surface/80 backdrop-blur-xl border-b border-border px-6 py-4 flex items-center gap-4">
+        <header className="sticky top-0 z-30 bg-[#fdfbf7]/80 backdrop-blur-3xl border-b border-border/50 px-6 py-4 flex items-center gap-4">
           <button className="lg:hidden p-2 rounded-lg hover:bg-surface-light" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-            <span className="text-xs text-text-muted">System Linked</span>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-white/50 rounded-full border border-border shadow-sm">
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Security Active</span>
+            </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 flex flex-col min-h-0 overflow-y-auto relative z-0">
+        <main className="flex-1 p-6 flex flex-col min-h-0 overflow-y-auto relative z-10 custom-scrollbar">
           <Outlet />
         </main>
 

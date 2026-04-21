@@ -10,7 +10,7 @@ import {
 import { 
   PieChart as RePieChart, Pie, Cell, Tooltip, 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
-  CartesianGrid, Legend 
+  CartesianGrid, Legend, LineChart, Line, Area 
 } from 'recharts';
 
 export default function RiskPage() {
@@ -337,6 +337,117 @@ export default function RiskPage() {
           >
             Go to Portfolio <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      )}
+      {/* Full Spectrum Risk Audit Graph */}
+      {risk && (
+        <div className="glass-card bg-white mt-10 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+             <Activity className="w-24 h-24 text-indigo-200" />
+          </div>
+          
+          <h3 className="text-sm font-black text-indigo-950 mb-8 uppercase tracking-widest border-b border-border pb-4 flex items-center gap-2">
+            <LineChart className="w-4 h-4 text-primary" /> Full-Spectrum Risk Audit Timeline
+          </h3>
+
+          <div className="h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                layout="vertical"
+                data={[
+                  { name: 'Initial Discovery', value: (() => {
+                    const r = (risk.initialAiRisk || 'Low').toLowerCase();
+                    if (r.includes('high')) return 90;
+                    if (r.includes('moderate') || r.includes('medium')) return 55;
+                    return 25;
+                  })(), label: risk.initialAiRisk || 'Low' },
+                  { name: 'Strategic Intent', value: (() => {
+                    const r = (risk.strategyRisk || 'Low').toLowerCase();
+                    if (r.includes('high')) return 90;
+                    if (r.includes('moderate') || r.includes('medium')) return 55;
+                    return 25;
+                  })(), label: risk.strategyRisk || 'Low' },
+                  { name: 'Portfolio Reality', value: (() => {
+                    const r = (risk.deviationRisk || 'On Track').toLowerCase();
+                    if (r.includes('high')) return 90;
+                    if (r.includes('moderate') || r.includes('medium')) return 55;
+                    return 25;
+                  })(), label: risk.deviationRisk || 'On Track' },
+                  { name: 'Composite Audit', value: (() => {
+                    const r = (risk.riskScore || 'low').toLowerCase();
+                    if (r.includes('high')) return 90;
+                    if (r.includes('moderate') || r.includes('medium')) return 55;
+                    return 25;
+                  })(), label: risk.riskScore.toUpperCase() }
+                ]}
+                margin={{ top: 10, right: 30, left: 100, bottom: 20 }}
+              >
+                <defs>
+                  <linearGradient id="riskGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="50%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <XAxis 
+                  type="number"
+                  hide 
+                  domain={[0, 100]}
+                />
+                <YAxis 
+                  dataKey="name" 
+                  type="category"
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }} 
+                  width={90}
+                />
+                <Tooltip 
+                  cursor={{ stroke: '#e2e8f0', strokeWidth: 2 }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-indigo-950 text-white p-3 rounded-xl shadow-2xl border border-white/10">
+                          <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">{payload[0].payload.name}</p>
+                          <p className="text-lg font-black">{payload[0].payload.label}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="url(#riskGradient)" 
+                  strokeWidth={4} 
+                  dot={{ r: 6, fill: '#fff', stroke: '#4f46e5', strokeWidth: 3 }}
+                  activeDot={{ r: 8, fill: '#4f46e5', stroke: '#fff', strokeWidth: 4 }}
+                  animationDuration={2000}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          
+          <div className="mt-8 grid grid-cols-4 gap-4 px-4 pb-4">
+             <div className="text-center">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Layer 0</p>
+                <div className="h-1 bg-emerald-500 rounded-full mt-1 w-1/2 mx-auto opacity-30" />
+             </div>
+             <div className="text-center">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Layer 1</p>
+                <div className="h-1 bg-indigo-500 rounded-full mt-1 w-1/2 mx-auto opacity-30" />
+             </div>
+             <div className="text-center">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Layer 2</p>
+                <div className="h-1 bg-amber-500 rounded-full mt-1 w-1/2 mx-auto opacity-30" />
+             </div>
+             <div className="text-center">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Final Audit</p>
+                <div className="h-1 bg-rose-500 rounded-full mt-1 w-1/2 mx-auto opacity-30" />
+             </div>
+          </div>
         </div>
       )}
     </div>
